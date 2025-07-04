@@ -58,7 +58,7 @@ class MyClient(discord.Client):
         # Check if the message is in a thread
         is_in_thread = isinstance(message.channel, discord.Thread)
 
-        print(
+        logging.info(
             f"Message from {message.author}: {message.content}, Type: {message.type}, In thread: {is_in_thread}"
         )
 
