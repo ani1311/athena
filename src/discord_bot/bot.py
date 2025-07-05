@@ -1,29 +1,42 @@
-"""_summary_
+"""
+This module defines the main Discord bot class for Athena.
 
-Raises:
-    ValueError: _description_
+It sets up the Discord client and runs the bot, connecting it to the agent
+and handling the bot's lifecycle.
 """
 
 import os
+
 import discord
 
 from src.agent.agent import Athena
-from src.database.db import Database
 from src.discord_bot.client import MyClient
 
 
 class DiscordBot:
     """
-    The Discord bot.
+    The main class for the Athena Discord bot.
+
+    This class is responsible for initializing and running the Discord bot,
+    connecting it with the Athena agent.
     """
 
-    def __init__(self, agent: Athena, db: Database):
+    def __init__(self, agent: Athena):
+        """
+        Initializes the DiscordBot.
+
+        Args:
+            agent: An instance of the Athena agent.
+        """
         self.agent = agent
-        self.db = db
 
     def run(self):
         """
         Runs the Discord bot.
+
+        This method sets up the Discord client, reads the bot token from an
+        environment variable, and starts the bot. It raises a ValueError if the
+        bot token is not found.
         """
         print("Discord bot is running...")
 
@@ -32,11 +45,11 @@ class DiscordBot:
 
         client = MyClient(self.agent, intents=intents)
 
-        # Read token from environment variable
         token = os.getenv("ATHENA_DISCORD_BOT_ACCESS_TOKEN")
         if not token:
             raise ValueError(
-                "ATHENA_DISCORD_BOT_ACCESS_TOKEN environment variable is not set"
+                "The ATHENA_DISCORD_BOT_ACCESS_TOKEN environment variable is not set. "
+                "Please set it to your Discord bot's access token."
             )
 
         client.run(token)
