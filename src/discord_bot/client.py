@@ -58,17 +58,28 @@ class MyClient(discord.Client):
         # Check if the message is in a thread
         is_in_thread = isinstance(message.channel, discord.Thread)
 
-        logging.info(
+        print(
             f"Message from {message.author}: {message.content}, Type: {message.type}, In thread: {is_in_thread}"
         )
 
         # Get response from agent
         resp = await self.agent.get_response(message.author, message.content)
 
+        # Split response into chunks if it's too long (Discord limit is 4000 characters)
+        max_length = 2000
+        if len(resp) <= max_length:
+            chunks = [resp]
+        else:
+            chunks = []
+            for i in range(0, len(resp), max_length):
+                chunks.append(resp[i : i + max_length])
+
         if is_in_thread:
             # If already in a thread, just reply in the same thread
-            await message.channel.send(resp)
+            for chunk in chunks:
+                await message.channel.send(chunk)
         else:
             # If not in a thread, create a new thread and send response there
             thread = await message.create_thread(name="Response")
-            await thread.send(resp)
+            for chunk in chunks:
+                await thread.send(chunk)
