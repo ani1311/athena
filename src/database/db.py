@@ -1,18 +1,39 @@
-"""
-This module defines the Database class, which is intended to handle all
-database interactions for Athena.
-
-Currently, this class is a placeholder and does not have any real functionality.
-In the future, it will be implemented to store and retrieve data such as user
-preferences, conversation history, and other relevant information.
-"""
+from typing import Type, List, Any, Optional
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from .models import Base
 
 
 class Database:
-    """
-    A placeholder for the database.
+    def __init__(self, db_path: str = "athena.db") -> None:
+        self.engine = create_engine(f"sqlite:///{db_path}")
+        self.Session = sessionmaker(bind=self.engine)
+        self.create_tables()
 
-    This class is intended to be replaced with a proper database implementation.
-    """
+    def create_tables(self) -> None:
+        Base.metadata.create_all(self.engine)
 
-    pass
+    def get_session(self) -> Session:
+        return self.Session()
+
+
+class Transactor:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def add(self, obj: Any) -> None:
+        self.session.add(obj)
+        self.session.commit()
+
+    def get(self, model: Type[Any], obj_id: str) -> Optional[Any]:
+        return self.session.query(model).get(obj_id)
+
+    def get_all(self, model: Type[Any]) -> List[Any]:
+        return self.session.query(model).all()
+
+    def query(self, model: Type[Any], *criterion: Any) -> Any:
+        return self.session.query(model).filter(*criterion)
+
+    def delete(self, obj: Any) -> None:
+        self.session.delete(obj)
+        self.session.commit()

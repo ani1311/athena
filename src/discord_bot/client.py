@@ -4,6 +4,7 @@ interactions with the Discord API.
 """
 
 import discord
+from discord.ext import commands
 
 from src.agent.agent import Athena
 
@@ -11,7 +12,7 @@ from src.agent.agent import Athena
 MAX_MESSAGE_LENGTH = 2000
 
 
-class MyClient(discord.Client):
+class MyClient(commands.Bot):
     """
     The customized Discord client for the Athena bot.
 
@@ -19,16 +20,16 @@ class MyClient(discord.Client):
     message is received.
     """
 
-    def __init__(self, agent: Athena, *args, **kwargs):
+    def __init__(self, agent: Athena, command_prefix: str, intents: discord.Intents):
         """
         Initializes the Discord client.
 
         Args:
             agent: An instance of the Athena agent.
-            *args: Variable length argument list for the parent class.
-            **kwargs: Arbitrary keyword arguments for the parent class.
+            command_prefix: The prefix for bot commands.
+            intents: The intents for the bot.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(command_prefix=command_prefix, intents=intents)
         self.agent = agent
 
     async def on_ready(self):

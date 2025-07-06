@@ -9,6 +9,7 @@ from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai import types
+from src.database.db import Database
 
 # Define a constant for the application name to avoid repetition.
 APP_NAME = "athena"
@@ -20,7 +21,7 @@ class Athena:
     responses using a generative AI model.
     """
 
-    def __init__(self):
+    def __init__(self, db: Database):
         """
         Initializes the Athena agent, setting up the ADK agent, session service,
         and runner. It retrieves the model ID from environment variables.
@@ -28,11 +29,11 @@ class Athena:
         self.agent = Agent(
             model=os.environ.get("MODEL_ID"),
             name="athena_personal_assistant",
-            instruction='''
+            instruction="""
 You are a personal assistant named Athena. You respond to messages that will be
 sent to you in a Discord channel, and you will respond with a discord formatted
 message. Try to be generally helpful and friendly.
-            ''',
+            """,
         )
         self.session_service = InMemorySessionService()
         self.runner = Runner(
@@ -41,6 +42,8 @@ message. Try to be generally helpful and friendly.
             session_service=self.session_service,
         )
         self._session_initialized = False
+
+        self.db = db  # Store the database instance for later use
 
     async def _ensure_session(self):
         """
