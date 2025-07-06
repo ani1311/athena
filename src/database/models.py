@@ -1,4 +1,4 @@
-""" """
+"""Database models for Athena."""
 
 from sqlalchemy import (
     Column,
@@ -9,9 +9,12 @@ from sqlalchemy import (
     Boolean,
     Text,
     text,
+    Enum,
+    ForeignKey,
 )
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.sql import func
+from sqlalchemy.orm import declarative_base, relationship
+
+from .enums import TaskStatus, TaskType, InteractionSender, OutreachType
 
 Base = declarative_base()
 
@@ -21,14 +24,21 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     description = Column(Text, nullable=False)
     status = Column(
-        String, nullable=False, default="todo"
+        Enum(TaskStatus), nullable=False, default=TaskStatus.TODO
     )  # todo, in_progress, done, cancelled
     created_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )
+    type = Column(
+        Enum(TaskType), nullable=False
+    )  # "daily", "weekly", "monthly", "sometime"
     completed_at = Column(DateTime)
     due_date = Column(Date)
     is_sometime_task = Column(Boolean, nullable=False, default=False)
+    goal_id = Column(Integer, ForeignKey("goals.id"), nullable=True)
+
+    # Relationship
+    goal = relationship("Goal", back_populates="tasks")
 
 
 class DailyLog(Base):
@@ -46,6 +56,9 @@ class Goal(Base):
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )
     is_active = Column(Boolean, nullable=False, default=True)
+
+    # Relationship
+    tasks = relationship("Task", back_populates="goal")
 
 
 class Setting(Base):
@@ -66,7 +79,7 @@ class Note(Base):
 class Interaction(Base):
     __tablename__ = "interactions"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sender = Column(String, nullable=False)  # "user" or "agent"
+    sender = Column(Enum(InteractionSender), nullable=False)  # "user" or "agent"
     content = Column(Text, nullable=False)
     timestamp = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
@@ -76,9 +89,9 @@ class Interaction(Base):
 class OutreachSchedule(Base):
     __tablename__ = "outreach_schedule"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    outreach_type = Column(String, nullable=False)  # "wakeup", "sleep", "hourly"
     next_outreach_time = Column(DateTime, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
+    description = Column(Text, nullable=True)
     created_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")
     )

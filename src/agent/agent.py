@@ -9,6 +9,7 @@ from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.genai import types
+from src.agent.db_tools import AgentDBTools
 from src.database.db import Database
 
 # Define a constant for the application name to avoid repetition.
@@ -26,6 +27,9 @@ class Athena:
         Initializes the Athena agent, setting up the ADK agent, session service,
         and runner. It retrieves the model ID from environment variables.
         """
+
+        self.db_tools = AgentDBTools(db)
+
         self.agent = Agent(
             model=os.environ.get("MODEL_ID"),
             name="athena_personal_assistant",
@@ -34,6 +38,10 @@ You are a personal assistant named Athena. You respond to messages that will be
 sent to you in a Discord channel, and you will respond with a discord formatted
 message. Try to be generally helpful and friendly.
             """,
+            tools=[
+                self.db_tools.get_goals,
+                self.db_tools.add_goal,
+            ],
         )
         self.session_service = InMemorySessionService()
         self.runner = Runner(
@@ -54,8 +62,6 @@ message. Try to be generally helpful and friendly.
         should be made dynamic to handle multiple users.
         """
         if not self._session_initialized:
-            # TODO: Replace hardcoded user_id and session_id with dynamic values
-            # in a production environment.
             await self.session_service.create_session(
                 app_name=APP_NAME, user_id="some_user", session_id="some_session_id"
             )
