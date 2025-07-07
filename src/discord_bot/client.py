@@ -75,6 +75,8 @@ class MyClient(commands.Bot):
             str(message.author), message.content
         )
 
+        print("Agent response:", agent_response)
+
         if not agent_response:
             return
 

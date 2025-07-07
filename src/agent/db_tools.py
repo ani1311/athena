@@ -8,25 +8,38 @@ class AgentDBTools:
         self.db = db
         self.goal_transactor = GoalTransactor(db.get_session())
 
-    def get_goals(self):
+    def get_goals(self) -> str:
         """
         Retrieves all active goals from the database.
 
         Returns:
-            List[Goal]: A list of active Goal objects.
+            str: A formatted string representation of all active goals.
         """
-        return self.goal_transactor.get_active_goals()
+        goals = self.goal_transactor.get_active_goals()
+        if not goals:
+            return "No active goals found."
 
-    def add_goal(self, description):
+        goal_list = []
+        for goal in goals:
+            goal_list.append(
+                f"ID: {goal.id}, Description: {goal.description}, Created: {goal.created_at}"
+            )
+
+        return "\n".join(goal_list)
+
+    def add_goal(self, description: str) -> str:
         """
-        creates a new goal with the given description.
+        Creates a new goal with the given description.
 
         Args:
             description (str): The description of the goal to be added.
         Returns:
-            Goal: The newly created goal object.
+            str: A confirmation message with the created goal's details.
         """
-        return self.goal_transactor.add_goal(description)
+        goal = self.goal_transactor.add_goal(description)
+        return (
+            f"Goal created successfully! ID: {goal.id}, Description: {goal.description}"
+        )
 
     def get_todays_tasks(self):
         return self.db.get_todays_tasks()
