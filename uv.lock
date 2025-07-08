@@ -155,12 +155,14 @@ source = { virtual = "." }
 dependencies = [
     { name = "discord-py" },
     { name = "google-adk" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "discord-py", specifier = ">=2.5.2" },
     { name = "google-adk", specifier = ">=1.5.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.41" },
 ]
 
 [[package]]

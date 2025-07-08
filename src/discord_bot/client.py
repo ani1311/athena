@@ -1,85 +1,95 @@
-"""_
-summary_
+"""
+This module defines the Discord client for Athena, which handles all
+interactions with the Discord API.
 """
 
-import asyncio
 import discord
+from discord.ext import commands
 
 from src.agent.agent import Athena
 
+# Discord's maximum message length.
+MAX_MESSAGE_LENGTH = 2000
 
-class MyClient(discord.Client):
-    """_summary_
 
-    Args:
-        discord (_type_): _description_
+class MyClient(commands.Bot):
+    """
+    The customized Discord client for the Athena bot.
+
+    This class handles Discord events, such as when the bot is ready and when a
+    message is received.
     """
 
-    def __init__(self, agent: Athena, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, agent: Athena, command_prefix: str, intents: discord.Intents):
+        """
+        Initializes the Discord client.
+
+        Args:
+            agent: An instance of the Athena agent.
+            command_prefix: The prefix for bot commands.
+            intents: The intents for the bot.
+        """
+        super().__init__(command_prefix=command_prefix, intents=intents)
         self.agent = agent
-        self.testing_channel = None
 
     async def on_ready(self):
         """
-        Called when the bot is ready.
+        Handles the event when the bot has successfully connected to Discord.
         """
         print(f"Bot '{self.user.name}' (ID: {self.user.id}) is ready!")
 
-        channels = self.get_all_channels()
-        for channel in channels:
-            print(channel.name, channel.id)
-            if channel.name == "testing":
-                self.testing_channel = channel
-
-        # if self.testing_channel:
-        #     await self.testing_channel.send("Hello my master, I am ready to serve you!")
-        #     Start the background task for sending test messages
-        #     self.loop.create_task(self.send_test_messages())
-
-    async def send_test_messages(self):
+    def _split_response(self, response: str) -> list[str]:
         """
-        Send a test message every 30 seconds to the testing channel.
+        Splits a response string into chunks that are within Discord's
+        message length limit.
+
+        Args:
+            response: The string to split.
+
+        Returns:
+            A list of response chunks.
         """
-        await self.wait_until_ready()  # Ensure the bot is fully ready
-        while not self.is_closed():
-            if self.testing_channel:
-                await self.testing_channel.send("Test message - sent every 30 seconds!")
-            await asyncio.sleep(30)  # Wait 30 seconds
+        return [
+            response[i : i + MAX_MESSAGE_LENGTH]
+            for i in range(0, len(response), MAX_MESSAGE_LENGTH)
+        ]
 
     async def on_message(self, message: discord.Message):
         """
-        Called when a message is sent in a channel the bot can see.
+        Handles the event when a message is sent in a channel the bot can see.
+
+        Args:
+            message: The message object from Discord.
         """
-        # Don't respond to the bot's own messages
+        # Ignore messages sent by the bot itself.
         if message.author == self.user:
             return
 
-        # Check if the message is in a thread
-        is_in_thread = isinstance(message.channel, discord.Thread)
-
         print(
-            f"Message from {message.author}: {message.content}, Type: {message.type}, In thread: {is_in_thread}"
+            f"Message from {message.author}: {message.content}, "
+            f"Type: {message.type}, In thread: {isinstance(message.channel, discord.Thread)}"
         )
 
-        # Get response from agent
-        resp = await self.agent.get_response(message.author, message.content)
+        # Get a response from the Athena agent.
+        agent_response = await self.agent.get_response(
+            str(message.author), message.content
+        )
 
-        # Split response into chunks if it's too long (Discord limit is 4000 characters)
-        max_length = 2000
-        if len(resp) <= max_length:
-            chunks = [resp]
-        else:
-            chunks = []
-            for i in range(0, len(resp), max_length):
-                chunks.append(resp[i : i + max_length])
+        print("Agent response:", agent_response)
 
-        if is_in_thread:
-            # If already in a thread, just reply in the same thread
-            for chunk in chunks:
-                await message.channel.send(chunk)
-        else:
-            # If not in a thread, create a new thread and send response there
-            thread = await message.create_thread(name="Response")
-            for chunk in chunks:
-                await thread.send(chunk)
+        if not agent_response:
+            return
+
+        # Split the response into chunks to adhere to Discord's message limit.
+        chunks = self._split_response(agent_response)
+
+        # If the original message is in a thread, reply in the same thread.
+        # Otherwise, create a new thread for the response.
+        response_channel = message.channel
+        if not isinstance(message.channel, discord.Thread):
+            # Use the message content as the thread name, truncated if necessary
+            thread_name = message.content[:100] if message.content else "Response"
+            response_channel = await message.create_thread(name=thread_name)
+
+        for chunk in chunks:
+            await response_channel.send(chunk)

@@ -10,9 +10,9 @@ async def setup():
     """
     The main function.
     """
-    agent = Athena()
     db = Database()
-    bot = DiscordBot(agent, db)
+    agent = Athena(db)
+    bot = DiscordBot(agent, db=db, periodic_channel_name="testing")
     return bot
 
 
